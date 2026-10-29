@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { siteData, whatsappFor } from '../data/site';
+import { siteData } from '../data/site';
 import { WordFillParagraph, SectionEyebrowRow } from '../components/MotionText';
 import { canHover } from '../lib/motion';
+import { WorkLightbox } from '../components/WorkLightbox';
 
 export const Work = () => {
   const [activePhoto, setActivePhoto] = useState(null);
@@ -11,7 +12,8 @@ export const Work = () => {
   const trackRef = useRef(null);
   const cursorRef = useRef(null);
   const thumbnailRefs = useRef({});
-  const lightboxRef = useRef(null);
+  const triggerElRef = useRef(null);
+
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -22,88 +24,121 @@ export const Work = () => {
   const hasMovedRef = useRef(false);
   const startXRef = useRef(0);
   const scrollStartLeftRef = useRef(0);
-  const pointerStartRef = useRef({ x: 0, y: 0, time: 0 });
 
   // Category filtering & scroller state
   const allPhotos = siteData.images.work;
   const [filterCategory, setFilterCategory] = useState('all');
 
-  const photos = React.useMemo(() => {
+  const photos = useMemo(() => {
     if (filterCategory === 'all') return allPhotos;
     return allPhotos.filter(p => p.category === filterCategory);
   }, [allPhotos, filterCategory]);
 
-  const boysCount = allPhotos.filter(p => p.category === 'boys').length;
-  const girlsCount = allPhotos.filter(p => p.category === 'girls').length;
+  const boyCount = useMemo(() => allPhotos.filter(p => p.category === 'boys').length, [allPhotos]);
+  const girlCount = useMemo(() => allPhotos.filter(p => p.category === 'girls').length, [allPhotos]);
 
+  const filterChips = useMemo(() => [
+    { id: 'all', label: 'All', count: allPhotos.length },
+    { id: 'boys', label: "Men's Cuts", count: boyCount },
+    { id: 'girls', label: "Women's Cuts", count: girlCount }
+  ], [allPhotos.length, boyCount, girlCount]);
+
+  const isFirstFilterRender = useRef(true);
+
+  // Smooth fade/scale stagger when changing filter
   const handleFilterChange = (category) => {
     if (category === filterCategory) return;
-    setFilterCategory(category);
-    setActiveIndex(0);
-    setScrollProgress(0);
-    if (trackRef.current) {
-      trackRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+
+    const prefersReducedMotion = typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion) {
+      setFilterCategory(category);
+      setActiveIndex(0);
+      setScrollProgress(0);
+      if (trackRef.current) {
+        trackRef.current.scrollTo({ left: 0 });
+      }
+      return;
+    }
+
+    const cards = trackRef.current?.querySelectorAll('.work-gallery-card');
+    if (cards && cards.length > 0) {
+      gsap.to(cards, {
+        opacity: 0,
+        scale: 0.94,
+        y: 8,
+        duration: 0.16,
+        stagger: 0.02,
+        ease: 'power2.in',
+        onComplete: () => {
+          setFilterCategory(category);
+          setActiveIndex(0);
+          setScrollProgress(0);
+          if (trackRef.current) {
+            trackRef.current.scrollTo({ left: 0 });
+          }
+        }
+      });
+    } else {
+      setFilterCategory(category);
+      setActiveIndex(0);
+      setScrollProgress(0);
     }
   };
 
-  const closeLightbox = React.useCallback(() => {
-    const lastId = activePhoto?.id;
-    setActivePhoto(null);
-    if (lastId && thumbnailRefs.current[lastId]) {
-      thumbnailRefs.current[lastId].focus();
+  // Animate new cards in smoothly after filter change
+  useEffect(() => {
+    if (isFirstFilterRender.current) {
+      isFirstFilterRender.current = false;
+      return;
     }
+
+    const prefersReducedMotion = typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
+
+    const cards = trackRef.current?.querySelectorAll('.work-gallery-card');
+    if (!cards || cards.length === 0) return;
+
+    gsap.fromTo(
+      cards,
+      { opacity: 0, scale: 0.94, y: 14 },
+      {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        duration: 0.35,
+        stagger: 0.04,
+        ease: 'power3.out',
+        clearProps: 'transform,opacity'
+      }
+    );
+  }, [filterCategory]);
+
+  const openLightbox = (item) => {
+    if (hasMovedRef.current) {
+      hasMovedRef.current = false;
+      return; // Suppress open if user dragged
+    }
+    triggerElRef.current = document.activeElement;
+    setActivePhoto(item);
+  };
+
+  const closeLightbox = useCallback(() => {
+    const currentId = activePhoto?.id;
+    setActivePhoto(null);
+    requestAnimationFrame(() => {
+      if (currentId && thumbnailRefs.current[currentId]) {
+        thumbnailRefs.current[currentId].focus();
+      } else if (triggerElRef.current?.focus) {
+        triggerElRef.current.focus();
+      }
+    });
   }, [activePhoto]);
 
-  // Lock page scroll (Lenis + native) while the lightbox is open
-  const lightboxOpen = Boolean(activePhoto);
-  useEffect(() => {
-    if (!lightboxOpen) return;
-    window.lenis?.stop();
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      window.lenis?.start();
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [lightboxOpen]);
-
-  // Keyboard navigation for lightbox & Tab trap
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && activePhoto) {
-        closeLightbox();
-      } else if (e.key === 'ArrowRight' && activePhoto) {
-        const currentIdx = photos.findIndex(p => p.id === activePhoto.id);
-        const nextIdx = (currentIdx + 1) % photos.length;
-        setActivePhoto(photos[nextIdx]);
-      } else if (e.key === 'ArrowLeft' && activePhoto) {
-        const currentIdx = photos.findIndex(p => p.id === activePhoto.id);
-        const prevIdx = (currentIdx - 1 + photos.length) % photos.length;
-        setActivePhoto(photos[prevIdx]);
-      } else if (e.key === 'Tab' && activePhoto && lightboxRef.current) {
-        const focusables = lightboxRef.current.querySelectorAll(
-          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        );
-        if (!focusables.length) return;
-
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activePhoto, closeLightbox, photos]);
-
   // Update scroller buttons & continuous progress
-  const updateScrollState = React.useCallback(() => {
+  const updateScrollState = useCallback(() => {
     const el = trackRef.current;
     if (!el) return;
     const maxScroll = el.scrollWidth - el.clientWidth;
@@ -137,7 +172,7 @@ export const Work = () => {
     };
   }, [updateScrollState]);
 
-  // Desktop Mouse Drag Scrolling (cursor: grab -> grabbing, no accidental click if moved)
+  // Desktop Mouse Drag Scrolling
   useEffect(() => {
     const el = trackRef.current;
     if (!el) return;
@@ -177,7 +212,7 @@ export const Work = () => {
     };
   }, []);
 
-  // Floating "View" label that follows the pointer inside the gallery container
+  // Floating "View" label that follows pointer
   useEffect(() => {
     const galleryEl = galleryRef.current;
     const cursor = cursorRef.current;
@@ -215,7 +250,7 @@ export const Work = () => {
     };
   }, []);
 
-  // Reveal each image with a clip-path as it scrolls into view
+  // Reveal each image with clip-path as it scrolls into view initially
   useLayoutEffect(() => {
     const mm = gsap.matchMedia(galleryRef.current);
 
@@ -251,7 +286,7 @@ export const Work = () => {
         }
       );
 
-      // One-time mobile swipe hint (nudge track -24px and back)
+      // One-time mobile swipe hint
       if (!reduceMotion && trackRef.current) {
         ScrollTrigger.create({
           trigger: trackRef.current,
@@ -275,7 +310,6 @@ export const Work = () => {
     return () => mm.revert();
   }, []);
 
-  // Arrow button handlers (scroll by one item width)
   const scrollPrev = () => {
     const el = trackRef.current;
     if (!el) return;
@@ -290,7 +324,6 @@ export const Work = () => {
     el.scrollBy({ left: cardWidth + 24, behavior: 'smooth' });
   };
 
-  // Gallery keyboard navigation when track has focus
   const handleTrackKeyDown = (e) => {
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
@@ -299,14 +332,6 @@ export const Work = () => {
       e.preventDefault();
       scrollNext();
     }
-  };
-
-  const openLightbox = (item) => {
-    if (hasMovedRef.current) {
-      hasMovedRef.current = false;
-      return; // Suppress open if user dragged
-    }
-    setActivePhoto(item);
   };
 
   if (!photos || photos.length === 0) return null;
@@ -332,33 +357,22 @@ export const Work = () => {
             </WordFillParagraph>
           </div>
 
-          {/* Action Row: Category Filter Pills + Controls */}
+          {/* Action Row: Category Filter Chips + Scroller Controls */}
           <div className="work-header-actions">
-            <div className="work-filter-pills" role="group" aria-label="Filter salon work by category">
-              <button
-                type="button"
-                aria-pressed={filterCategory === 'all'}
-                className={`work-filter-pill ${filterCategory === 'all' ? 'active' : ''}`}
-                onClick={() => handleFilterChange('all')}
-              >
-                All ({allPhotos.length})
-              </button>
-              <button
-                type="button"
-                aria-pressed={filterCategory === 'boys'}
-                className={`work-filter-pill ${filterCategory === 'boys' ? 'active' : ''}`}
-                onClick={() => handleFilterChange('boys')}
-              >
-                Men's ({boysCount})
-              </button>
-              <button
-                type="button"
-                aria-pressed={filterCategory === 'girls'}
-                className={`work-filter-pill ${filterCategory === 'girls' ? 'active' : ''}`}
-                onClick={() => handleFilterChange('girls')}
-              >
-                Women's ({girlsCount})
-              </button>
+            <div className="work-filter-pills" role="tablist" aria-label="Filter salon work by category">
+              {filterChips.map(chip => (
+                <button
+                  key={chip.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={filterCategory === chip.id}
+                  className={`work-filter-pill ${filterCategory === chip.id ? 'active' : ''}`}
+                  onClick={() => handleFilterChange(chip.id)}
+                >
+                  <span>{chip.label}</span>
+                  <span className="work-filter-count">({chip.count})</span>
+                </button>
+              ))}
             </div>
 
             {/* Scroller Controls on Desktop */}
@@ -396,7 +410,7 @@ export const Work = () => {
           <div
             className="work-progress-bar-fill"
             style={{ transform: `scaleX(${Math.max(0.08, scrollProgress)})` }}
-          ></div>
+          />
         </div>
       </div>
 
@@ -404,11 +418,12 @@ export const Work = () => {
       <div className="work-horizontal-viewport">
         <div
           ref={trackRef}
+          id="work-track"
           className="work-horizontal-track"
           tabIndex={0}
           onKeyDown={handleTrackKeyDown}
           role="region"
-          aria-label="Salon work carousel. Use Left and Right arrow keys to navigate."
+          aria-label="Salon work gallery. Use Left and Right arrow keys to navigate."
         >
           {photos.map((item, idx) => (
             <div
@@ -424,7 +439,7 @@ export const Work = () => {
                   openLightbox(item);
                 }
               }}
-              aria-label={item.title}
+              aria-label={`${item.title} — ${item.categoryLabel}. Click to view large photo.`}
             >
               <div className="work-photo-frame">
                 <img
@@ -434,6 +449,7 @@ export const Work = () => {
                   height="1000"
                   loading="lazy"
                   decoding="async"
+                  sizes="(max-width: 639px) 70vw, (max-width: 1023px) 290px, 310px"
                   className="work-photo-img"
                   draggable={false}
                 />
@@ -445,7 +461,7 @@ export const Work = () => {
                     </div>
                     <h3 className="work-card-title">{item.title}</h3>
                   </div>
-                  <span className="work-zoom-hint">Enlarge ↗</span>
+                  <span className="work-zoom-hint" aria-hidden="true">Enlarge ↗</span>
                 </div>
               </div>
             </div>
@@ -454,108 +470,45 @@ export const Work = () => {
       </div>
 
       <div className="container">
-        {/* Instagram Link */}
+        {/* Instagram CTA Button */}
         <div className="work-instagram-row">
           <a
             href={siteData.links.instagram}
             target="_blank"
             rel="noopener noreferrer"
-            className="services-link-action"
+            className="btn btn-secondary work-instagram-btn"
+            aria-label="Follow Hair City Salon on Instagram (opens in a new tab)"
           >
-            Follow @_hair_city_salon on Instagram for regular studio cuts →
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+            </svg>
+            <span>Follow us on Instagram</span>
+            <span className="btn-arrow" aria-hidden="true">↗</span>
           </a>
+          <p className="work-instagram-handle">@_hair_city_salon · Studio cuts, colour &amp; academy updates</p>
         </div>
       </div>
 
-      {/* Accessible Lightbox Modal with Flip Transition and Arrow Support */}
+      {/* Accessible Full-Screen Lightbox Viewer */}
       {activePhoto && (
-        <div
-          className="lightbox-overlay"
-          onClick={closeLightbox}
-          role="dialog"
-          aria-modal="true"
-          aria-label={activePhoto.title || activePhoto.alt}
-        >
-          <div
-            ref={lightboxRef}
-            className="lightbox-content"
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={(e) => {
-              pointerStartRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
-            }}
-            onPointerUp={(e) => {
-              const dx = e.clientX - pointerStartRef.current.x;
-              const dy = e.clientY - pointerStartRef.current.y;
-              const absX = Math.abs(dx);
-              const absY = Math.abs(dy);
-
-              // Swipe down to close (dominant vertical swipe > 50px)
-              if (dy > 50 && absY > absX * 1.2) {
-                closeLightbox();
-                return;
-              }
-
-              // Swipe horizontal to change photo (> 40px)
-              if (absX > 40 && absX > absY) {
-                const currentIdx = photos.findIndex(p => p.id === activePhoto?.id);
-                if (currentIdx === -1) return;
-                if (dx < 0) {
-                  const nextIdx = (currentIdx + 1) % photos.length;
-                  setActivePhoto(photos[nextIdx]);
-                } else {
-                  const prevIdx = (currentIdx - 1 + photos.length) % photos.length;
-                  setActivePhoto(photos[prevIdx]);
-                }
-              }
-            }}
-          >
-            <button
-              type="button"
-              className="lightbox-close"
-              onClick={closeLightbox}
-              aria-label="Close image"
-              autoFocus
-            >
-              ✕
-            </button>
-            <img
-              src={activePhoto.src}
-              alt={activePhoto.alt}
-              width="800"
-              height="1000"
-              loading="lazy"
-              decoding="async"
-              className="lightbox-img"
-            />
-            <div className="lightbox-footer">
-              <div className="lightbox-info-pane">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.35rem' }}>
-                  <span className="work-category-badge">{activePhoto.categoryLabel}</span>
-                  <span className="lightbox-photo-title">
-                    {activePhoto.title}
-                  </span>
-                </div>
-                <span className="lightbox-photo-desc">
-                  {activePhoto.description || activePhoto.alt}
-                </span>
-              </div>
-              <div className="lightbox-actions-pane">
-                <a
-                  href={whatsappFor(`this look: ${activePhoto.title}`)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-secondary lightbox-book-btn"
-                >
-                  <span>Book this look</span>
-                  <span className="btn-arrow">→</span>
-                </a>
-                <span className="lightbox-nav-shortcut">
-                  Left / Right arrows · Esc to close
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <WorkLightbox
+          activePhoto={activePhoto}
+          photos={photos}
+          onClose={closeLightbox}
+          onSelectPhoto={setActivePhoto}
+        />
       )}
 
       <style>{`
@@ -626,6 +579,9 @@ export const Work = () => {
           cursor: pointer;
           border-radius: 999px;
           transition: all var(--transition-fast);
+          display: inline-flex;
+          align-items: center;
+          gap: 0.25rem;
         }
 
         .work-filter-pill.active {
@@ -635,6 +591,11 @@ export const Work = () => {
 
         .work-filter-pill:hover:not(.active) {
           color: var(--color-text);
+        }
+
+        .work-filter-count {
+          font-size: 0.75rem;
+          opacity: 0.85;
         }
 
         .work-controls-pane {
@@ -714,18 +675,17 @@ export const Work = () => {
           padding: 0 clamp(1.25rem, 4.5vw, 4rem) 1rem;
           cursor: grab;
           user-select: none;
-          /* Hide scrollbar visually while keeping it scrollable */
-          scrollbar-width: none; /* Firefox */
-          -ms-overflow-style: none; /* IE/Edge */
+          scrollbar-width: none;
+          -ms-overflow-style: none;
         }
 
         .work-horizontal-track::-webkit-scrollbar {
-          display: none; /* Chrome/Safari */
+          display: none;
         }
 
         .work-horizontal-track.is-dragging {
           cursor: grabbing;
-          scroll-snap-type: none; /* Smoother dragging without snapping fight */
+          scroll-snap-type: none;
         }
 
         .work-gallery-card {
@@ -754,10 +714,9 @@ export const Work = () => {
           object-position: 50% 20%;
           display: block;
           transition: transform 0.6s var(--ease-editorial);
-          pointer-events: none; /* Prevents ghost image drag */
+          pointer-events: none;
         }
 
-        /* Hover zooms to 1.06 */
         .work-gallery-card:hover .work-photo-img {
           transform: scale(1.06);
         }
@@ -834,65 +793,186 @@ export const Work = () => {
           flex-shrink: 0;
         }
 
+        /* Instagram CTA Row */
+        .work-instagram-row {
+          margin-top: clamp(1.75rem, 3.5vw, 2.75rem);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 0.65rem;
+          text-align: center;
+        }
+
+        .work-instagram-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.65rem;
+          padding: 0.85rem 1.85rem;
+          font-size: 0.9375rem;
+          font-weight: 500;
+        }
+
+        .work-instagram-handle {
+          font-size: 0.8125rem;
+          color: var(--color-muted);
+          margin: 0;
+        }
+
+        /* Full-screen Accessible Lightbox */
         .lightbox-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(20, 18, 16, 0.94);
-          backdrop-filter: blur(8px);
-          z-index: 1000;
+          background: rgba(14, 12, 11, 0.94);
+          backdrop-filter: blur(12px);
+          z-index: 2000;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 1.5rem;
+          padding: clamp(0.75rem, 2.5vw, 1.75rem);
+          animation: lightboxFadeIn 0.22s ease-out;
+        }
+
+        @keyframes lightboxFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
 
         .lightbox-content {
           position: relative;
-          max-width: 820px;
+          max-width: 900px;
           width: 100%;
-          background: var(--color-bg);
-          overflow: hidden;
-          border: 1px solid var(--color-border);
-        }
-
-        .lightbox-close {
-          position: absolute;
-          top: 1rem;
-          right: 1rem;
-          background: rgba(250, 248, 245, 0.95);
-          border: 1px solid var(--color-border);
-          width: 44px;
-          height: 44px;
+          max-height: 94vh;
           display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1.15rem;
-          cursor: pointer;
-          z-index: 10;
-          color: var(--color-text);
+          flex-direction: column;
+          background: var(--color-bg);
+          border: 1px solid var(--color-border);
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+          touch-action: pan-y;
         }
 
-        .lightbox-img {
-          width: 100%;
-          max-height: 75vh;
-          object-fit: contain;
-          background-color: var(--color-surface);
-        }
-
-        .lightbox-footer {
-          padding: 1.25rem 1.5rem;
+        .lightbox-top-bar {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          gap: 1.5rem;
+          padding: 0.85rem 1.25rem;
+          background: var(--color-surface);
+          border-bottom: 1px solid var(--color-border);
+        }
+
+        .lightbox-top-meta {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .lightbox-counter {
+          font-family: var(--font-serif);
+          font-size: 0.9375rem;
+          color: var(--color-accent);
+          font-weight: 500;
+        }
+
+        .lightbox-close {
+          width: 40px;
+          height: 40px;
+          background: var(--color-bg);
+          border: 1px solid var(--color-border);
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: var(--color-text);
+          transition: all var(--transition-fast);
+        }
+
+        .lightbox-close:hover {
+          background: var(--color-surface);
+          border-color: var(--color-accent);
+          color: var(--color-accent);
+        }
+
+        .lightbox-stage {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #0d0b0a;
+          min-height: 260px;
+          max-height: calc(80vh - 160px);
+          overflow: hidden;
+          padding: 0.5rem;
+        }
+
+        .lightbox-img-wrapper {
+          max-width: 100%;
+          max-height: calc(80vh - 160px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .lightbox-img {
+          max-width: 100%;
+          max-height: calc(80vh - 160px);
+          object-fit: contain;
+          display: block;
+          border-radius: 4px;
+        }
+
+        .lightbox-nav-btn {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 10;
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: rgba(250, 248, 245, 0.94);
+          border: 1px solid var(--color-border);
+          color: var(--color-text);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all var(--transition-fast);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+        }
+
+        .lightbox-nav-prev {
+          left: 1rem;
+        }
+
+        .lightbox-nav-next {
+          right: 1rem;
+        }
+
+        .lightbox-nav-btn:hover {
+          background: var(--color-accent);
+          color: #FFFFFF;
+          border-color: var(--color-accent);
+          transform: translateY(-50%) scale(1.05);
+        }
+
+        .lightbox-footer {
+          padding: 1.15rem 1.35rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 1.25rem;
           border-top: 1px solid var(--color-border);
+          background: var(--color-surface);
           flex-wrap: wrap;
         }
 
         .lightbox-info-pane {
           display: flex;
           flex-direction: column;
-          gap: 0.2rem;
+          gap: 0.25rem;
+          max-width: 580px;
         }
 
         .lightbox-photo-title {
@@ -900,12 +980,14 @@ export const Work = () => {
           font-size: 1.15rem;
           font-weight: 600;
           color: var(--color-text);
+          margin: 0;
         }
 
         .lightbox-photo-desc {
           font-size: 0.85rem;
           color: var(--color-muted);
-          line-height: 1.4;
+          line-height: 1.45;
+          margin: 0;
         }
 
         .lightbox-actions-pane {
@@ -915,8 +997,8 @@ export const Work = () => {
           flex-wrap: wrap;
         }
 
-        .lightbox-book-btn {
-          padding: 0.5rem 1rem;
+        .lightbox-action-btn {
+          padding: 0.55rem 1.15rem;
           font-size: 0.8125rem;
         }
 
@@ -924,23 +1006,6 @@ export const Work = () => {
           font-size: 0.75rem;
           color: var(--color-muted);
           white-space: nowrap;
-        }
-
-        .work-instagram-row {
-          margin-top: clamp(1.25rem, 2vw, 1.75rem);
-          text-align: center;
-        }
-
-        .services-link-action {
-          font-family: var(--font-serif);
-          font-size: 1.15rem;
-          color: var(--color-text);
-          text-decoration: underline;
-          text-underline-offset: 4px;
-          transition: color var(--transition-fast);
-        }
-        .services-link-action:hover {
-          color: var(--color-accent);
         }
 
         @media (max-width: 860px) {
@@ -993,10 +1058,35 @@ export const Work = () => {
           .work-nav-arrows {
             display: none;
           }
-        }
-
-        .lightbox-content {
-          touch-action: none;
+          .lightbox-content {
+            max-height: 96vh;
+            border-radius: 6px;
+          }
+          .lightbox-stage {
+            max-height: calc(68vh - 120px);
+          }
+          .lightbox-img {
+            max-height: calc(68vh - 120px);
+          }
+          .lightbox-nav-btn {
+            width: 38px;
+            height: 38px;
+            background: rgba(250, 248, 245, 0.88);
+          }
+          .lightbox-nav-prev {
+            left: 0.5rem;
+          }
+          .lightbox-nav-next {
+            right: 0.5rem;
+          }
+          .lightbox-footer {
+            padding: 0.85rem 1rem;
+            gap: 0.75rem;
+          }
+          .lightbox-actions-pane {
+            width: 100%;
+            justify-content: space-between;
+          }
         }
 
         @media (pointer: coarse) {
@@ -1007,10 +1097,14 @@ export const Work = () => {
             justify-content: center;
             padding: 0.5rem 1rem;
           }
-          .services-link-action {
+          .work-instagram-btn {
+            min-height: 48px;
+            padding: 0.85rem 1.5rem;
+          }
+          .lightbox-close,
+          .lightbox-nav-btn {
+            min-width: 44px;
             min-height: 44px;
-            display: inline-flex;
-            align-items: center;
           }
         }
       `}</style>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { siteData, whatsappFor } from '../data/site';
 import { WordFillParagraph, SectionEyebrowRow } from '../components/MotionText';
+import { track } from '../lib/track';
 
 export const CuttingSection = () => {
   const data = siteData.cutting;
@@ -136,15 +137,24 @@ export const CuttingSection = () => {
               ))}
             </ul>
 
-            <div style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--color-border)' }}>
+            <div style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '0.85rem', flexWrap: 'wrap' }}>
+              <a
+                href="#visit"
+                className="btn btn-primary"
+                onClick={() => track.bookingSubmit({ location: 'cutting_section' })}
+              >
+                <span>Walk in today</span>
+                <span className="btn-arrow" aria-hidden="true">↓</span>
+              </a>
               <a
                 href={whatsappFor("hair cutting and styling")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-secondary"
+                onClick={() => track.whatsappClick('cutting_section')}
               >
-                <span>Book a cut</span>
-                <span className="btn-arrow">→</span>
+                <span>Chat on WhatsApp</span>
+                <span className="btn-arrow" aria-hidden="true">→</span>
               </a>
             </div>
           </div>
@@ -180,7 +190,7 @@ export const CuttingSection = () => {
                   width="800"
                   height="1000"
                   className="discipline-photo-img cutting-inner-img"
-                  loading="eager"
+                  loading="lazy"
                   decoding="async"
                 />
                 {inactiveCut?.src && (
@@ -189,7 +199,7 @@ export const CuttingSection = () => {
                     alt=""
                     aria-hidden="true"
                     style={{ display: 'none' }}
-                    loading="eager"
+                    loading="lazy"
                     decoding="async"
                   />
                 )}

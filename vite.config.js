@@ -11,6 +11,9 @@ export default defineConfig({
           if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/scheduler/')) {
             return 'vendor-react';
           }
+          if (id.includes('node_modules/react-router') || id.includes('node_modules/@remix-run/')) {
+            return 'vendor-router';
+          }
           if (id.includes('node_modules/gsap/')) {
             return 'vendor-gsap';
           }
@@ -20,6 +23,11 @@ export default defineConfig({
         }
       }
     }
+  },
+  preview: {
+    // SPA fallback for vite preview
+    port: 4173,
   }
 })
+
 

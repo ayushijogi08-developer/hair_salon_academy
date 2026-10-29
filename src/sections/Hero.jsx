@@ -2,7 +2,8 @@ import React, { useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { SplitText } from 'gsap/SplitText';
 import { siteData } from '../data/site';
-import { getBusinessStatus } from '../lib/hours';
+import { OpenStatus } from '../components/OpenStatus';
+import { track } from '../lib/track';
 
 export const Hero = () => {
   const heroRef = useRef(null);
@@ -13,7 +14,6 @@ export const Hero = () => {
     src: siteData.images.cutting?.src,
     alt: "Client with textured cut and styled fade at Hair City Salon, Akola"
   };
-  const businessStatus = getBusinessStatus();
 
   useLayoutEffect(() => {
     const mm = gsap.matchMedia(heroRef.current);
@@ -163,6 +163,13 @@ export const Hero = () => {
         <div className="hero-grid">
           {/* Top Left: Headline, Sub, and CTAs */}
           <div className="hero-copy-block">
+            <div className="hero-eyebrow-container hero-meta-fade">
+              <span className="section-label hero-eyebrow">{heroData.eyebrow}</span>
+              <div className="hero-open-status-under-eyebrow">
+                <OpenStatus />
+              </div>
+            </div>
+
             <h1 id="hero-title" className="hero-h1">
               <span className="hero-title-line">Where Akola gets</span>
               <span className="hero-title-line">its hair done,</span>
@@ -190,6 +197,7 @@ export const Hero = () => {
                   alt={heroImg.alt}
                   width="400"
                   height="600"
+                  sizes="(max-width: 639px) 180px, (max-width: 1023px) 270px, 320px"
                   className="hero-arch-img hero-arch-img-women"
                   loading="eager"
                   fetchPriority="high"
@@ -209,6 +217,7 @@ export const Hero = () => {
                   alt={secondaryImg.alt}
                   width="447"
                   height="447"
+                  sizes="(max-width: 639px) 140px, (max-width: 1023px) 220px, 260px"
                   className="hero-arch-img hero-arch-img-men"
                   loading="eager"
                   decoding="async"
@@ -247,42 +256,37 @@ export const Hero = () => {
           <div className="hero-actions-block hero-meta-fade">
             <div className="hero-actions-row">
               <a
-                href={siteData.links.whatsappGeneral}
-                target="_blank"
-                rel="noopener noreferrer"
+                href="#visit"
                 className="btn btn-primary hero-btn"
+                onClick={() => track.bookingSubmit({ location: 'hero' })}
               >
                 <span>{heroData.ctaPrimary}</span>
-                <span className="btn-arrow" aria-hidden="true">→</span>
+                <span className="btn-arrow" aria-hidden="true">↓</span>
               </a>
 
               <a
                 href="#academy"
                 className="btn btn-secondary hero-btn"
+                onClick={() => track.academyEnquirySubmit({ location: 'hero' })}
               >
                 <span>{heroData.ctaSecondary}</span>
                 <span className="btn-arrow" aria-hidden="true">↓</span>
               </a>
             </div>
 
-            {/* Optional Social Proof Line: rendered ONLY when real owner data with confirmed: true is supplied */}
-            {heroData.proof?.confirmed && (
+            {/* Social Proof Line: rendered ONLY when real confirmed rating and count exist */}
+            {heroData.proof?.confirmed && heroData.proof?.rating && heroData.proof?.count && (
               <a
                 href={siteData.links.googleMaps}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hero-social-proof"
-                aria-label={`${heroData.proof.rating} out of 5 stars from ${heroData.proof.count} Google reviews`}
+                aria-label={`${heroData.proof.rating} on Google from ${heroData.proof.count} reviews`}
               >
-                <span className="hero-proof-stars" aria-hidden="true">
-                  {[...Array(5)].map((_, i) => (
-                    <svg key={i} viewBox="0 0 20 20" className="hero-star-icon" fill="currentColor">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
+                <span className="hero-proof-stars" aria-hidden="true">★</span>
+                <span className="hero-proof-text">
+                  {heroData.proof.rating} on Google · {heroData.proof.count} reviews
                 </span>
-                <span className="hero-proof-rating">{heroData.proof.rating}</span>
-                <span className="hero-proof-text">from {heroData.proof.count} Google reviews</span>
               </a>
             )}
           </div>
@@ -292,13 +296,7 @@ export const Hero = () => {
             <div className="hero-info-col hero-info-col-1">
               <span className="hero-info-label">Today</span>
               <div className="hero-info-value hero-status-row">
-                <span
-                  className={`status-indicator-dot ${businessStatus.isOpen ? 'is-open' : 'is-closed'}`}
-                  aria-hidden="true"
-                />
-                <span className="hero-status-text">
-                  {businessStatus.badgeText}
-                </span>
+                <OpenStatus />
               </div>
             </div>
 
@@ -369,6 +367,22 @@ export const Hero = () => {
           grid-area: copy;
           max-width: 660px;
           width: 100%;
+        }
+
+        .hero-eyebrow-container {
+          margin-bottom: clamp(1rem, 1.8vw, 1.5rem);
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+        }
+
+        .hero-eyebrow {
+          margin-bottom: 0;
+        }
+
+        .hero-open-status-under-eyebrow {
+          display: inline-flex;
         }
 
         .hero-actions-block {

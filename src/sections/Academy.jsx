@@ -1,4 +1,5 @@
 import React, { useState, useLayoutEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { siteData } from '../data/site';
@@ -34,7 +35,7 @@ export const Academy = () => {
       isMobile: '(max-width: 860px)',
       reduceMotion: '(prefers-reduced-motion: reduce)'
     }, (context) => {
-      const { reduceMotion, isDesktop, isMobile } = context.conditions;
+      const { reduceMotion, _isDesktop, isMobile } = context.conditions;
 
       if (reduceMotion) {
         gsap.set('.academy-step-card, .academy-info-pane', { opacity: 1, y: 0, visibility: 'visible' });
@@ -257,7 +258,7 @@ export const Academy = () => {
           anticipatePin: 1,
           // If the group is taller than a short phone screen, keep the card in view
           start: () => (isMobile && pinEl.offsetHeight > window.innerHeight ? 'bottom bottom' : 'top top'),
-          end: () => '+=' + (numSteps * (isMobile ? 45 : 60)) + '%',
+          end: () => '+=' + (numSteps * (isMobile ? 25 : 30)) + '%',
           onEnter: (self) => {
             const targetIdx = Math.min(numSteps - 1, Math.max(0, Math.floor(self.progress * numSteps)));
             snapTo(targetIdx);
@@ -486,7 +487,7 @@ export const Academy = () => {
                 <path
                   ref={stepsSvgRef}
                   d="M2 0 L2 200"
-                  stroke="var(--color-dark-accent, #C88358)"
+                  stroke="var(--color-dark-accent, #D9B77E)"
                   strokeWidth="3"
                   strokeDasharray="300"
                   strokeDashoffset="300"
@@ -505,78 +506,45 @@ export const Academy = () => {
           </div>
         </div>
 
-        {/* Closing Action Footer */}
+        {/* Teaser action footer — links to full Academy page */}
         <div className="academy-action-footer">
-          <div>
-            {siteData.academyDetails && siteData.academyDetails.confirmed && (
-              <div className="academy-details-strip">
-                {siteData.academyDetails.duration && (
-                  <div className="academy-detail-item">
-                    <span className="academy-detail-label">Duration</span>
-                    <span className="academy-detail-val">{siteData.academyDetails.duration}</span>
-                  </div>
-                )}
-                {(siteData.academyDetails.feeRange || siteData.academyDetails.fee) && (
-                  <div className="academy-detail-item">
-                    <span className="academy-detail-label">Fee</span>
-                    <span className="academy-detail-val">{siteData.academyDetails.feeRange || siteData.academyDetails.fee}</span>
-                  </div>
-                )}
-                {siteData.academyDetails.nextBatch && (
-                  <div className="academy-detail-item">
-                    <span className="academy-detail-label">Next Batch</span>
-                    <span className="academy-detail-val">{siteData.academyDetails.nextBatch}</span>
-                  </div>
-                )}
-                {siteData.academyDetails.certificate && (
-                  <div className="academy-detail-item">
-                    <span className="academy-detail-label">Certificate</span>
-                    <span className="academy-detail-val">{siteData.academyDetails.certificate}</span>
-                  </div>
-                )}
-              </div>
-            )}
-            <p className="academy-closing-line">{data.closingLine}</p>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--color-dark-muted)' }}>
-              Direct message to our academy coordinator
-            </span>
-          </div>
+          <h3 className="academy-closing-line">{data.closingLine}</h3>
 
-          <a
-            href={siteData.links.whatsappAcademy}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            to="/academy"
             className="btn btn-dark"
-            aria-label="Ask about academy courses and batches on WhatsApp"
+            aria-label="See the full Hair City Academy page"
+            onClick={() => window.scrollTo(0, 0)}
           >
-            <span>Ask about batches</span>
-            <span className="btn-arrow">→</span>
-          </a>
+            <span>See full academy</span>
+            <span className="btn-arrow" aria-hidden="true">→</span>
+          </Link>
         </div>
       </div>
 
       <style>{`
         /* 5) CLEAN ENTRY INTO DARK SECTION */
         .academy-root-section {
-          background-color: #141211;
-          color: #FAF8F5;
+          background-color: var(--color-dark-bg);
+          background-image: radial-gradient(ellipse 70% 45% at 50% 10%, rgba(217, 183, 126, 0.07) 0%, transparent 70%);
+          color: var(--color-dark-text);
           position: relative;
           z-index: 10;
           overflow: visible;
         }
 
         .academy-container-top {
-          padding-top: clamp(4rem, 8vw, 7rem);
-          padding-bottom: 2rem;
+          padding-top: clamp(2.75rem, 5vw, 4rem);
+          padding-bottom: 0.75rem;
         }
 
         .academy-container-bottom {
-          padding-top: 4rem;
-          padding-bottom: clamp(4rem, 8vw, 7rem);
+          padding-top: clamp(1.5rem, 3vw, 2.5rem);
+          padding-bottom: clamp(3.5rem, 6vw, 5.5rem);
         }
 
         .academy-hero-grid {
-          margin-bottom: 1.5rem;
+          margin-bottom: 0.75rem;
         }
 
         .academy-header-text {
@@ -587,7 +555,7 @@ export const Academy = () => {
           font-family: var(--font-serif);
           font-size: clamp(2.25rem, 4.5vw, 4rem);
           line-height: 1.08;
-          margin-bottom: 1.25rem;
+          margin-bottom: 0.85rem;
           color: var(--color-dark-text);
           font-weight: 400;
         }
@@ -597,9 +565,10 @@ export const Academy = () => {
           height: 100svh;
           max-height: 100vh;
           box-sizing: border-box;
-          padding-top: var(--header-height, 72px);
-          display: grid;
-          align-content: center;
+          padding-top: calc(var(--header-height, 72px) + 1.25rem);
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
           position: relative;
           width: 100%;
         }
@@ -607,7 +576,7 @@ export const Academy = () => {
         .academy-stage-inner {
           display: flex;
           flex-direction: column;
-          justify-content: center;
+          justify-content: flex-start;
           max-height: calc(100svh - var(--header-height, 72px) - 24px);
         }
 
@@ -621,7 +590,7 @@ export const Academy = () => {
         .academy-step-counter {
           font-family: var(--font-serif);
           font-size: 1.15rem;
-          color: var(--color-dark-accent, #C88358);
+          color: var(--color-dark-accent, #D9B77E);
           letter-spacing: 0.04em;
         }
 
@@ -637,7 +606,7 @@ export const Academy = () => {
         .academy-progress-bar-fill {
           height: 100%;
           width: 100%;
-          background: var(--color-dark-accent, #C88358);
+          background: var(--color-dark-accent, #D9B77E);
           transform-origin: left center;
           transform: scaleX(0.04);
         }
@@ -698,14 +667,14 @@ export const Academy = () => {
           width: 10px;
           height: 10px;
           border-radius: 50%;
-          background: #141211;
+          background: var(--color-dark-bg);
           border: 2px solid rgba(255, 255, 255, 0.3);
           transition: border-color 0.25s ease, background-color 0.25s ease, transform 0.25s ease;
         }
 
         .academy-stepper-btn.active .stepper-dot-indicator {
-          border-color: var(--color-dark-accent, #C88358);
-          background: var(--color-dark-accent, #C88358);
+          border-color: var(--color-dark-accent, #D9B77E);
+          background: var(--color-dark-accent, #D9B77E);
           transform: translateY(-50%) scale(1.15);
         }
 
@@ -719,7 +688,7 @@ export const Academy = () => {
 
         .stepper-label strong {
           font-family: var(--font-serif);
-          color: var(--color-dark-accent, #C88358);
+          color: var(--color-dark-accent, #D9B77E);
         }
 
         /* Right Step Cards Stack */
@@ -730,8 +699,8 @@ export const Academy = () => {
           grid-template-rows: 1fr;
           min-height: clamp(340px, 46vh, 440px);
           overflow: hidden;
-          background: #1E1B19;
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: var(--color-dark-surface);
+          border: 1px solid var(--color-dark-border);
         }
 
         /* 4 steps stacked in the same grid cell */
@@ -742,7 +711,7 @@ export const Academy = () => {
           flex-direction: column;
           justify-content: center;
           position: relative;
-          background-color: #1E1B19;
+          background-color: var(--color-dark-surface);
           overflow: hidden;
           box-sizing: border-box;
         }
@@ -785,7 +754,7 @@ export const Academy = () => {
           font-family: var(--font-serif);
           font-size: clamp(2.5rem, 4.5vw, 3.5rem);
           line-height: 1;
-          color: var(--color-dark-accent, #C88358);
+          color: var(--color-dark-accent, #D9B77E);
           font-weight: 300;
         }
 
@@ -826,14 +795,14 @@ export const Academy = () => {
           bottom: 3px;
           width: 2.5px;
           border-radius: 1px;
-          background: var(--color-dark-accent, #C88358);
+          background: var(--color-dark-accent, #D9B77E);
           transform-origin: top center;
           pointer-events: none;
         }
 
         .academy-step-card-detail {
           font-size: 0.95rem;
-          color: rgba(250, 248, 245, 0.78);
+          color: var(--color-dark-muted);
           line-height: 1.5;
           margin: 0;
         }
@@ -905,7 +874,7 @@ export const Academy = () => {
         .academy-step-num {
           font-family: var(--font-serif);
           font-size: 1.1rem;
-          color: var(--color-dark-accent, #C88358);
+          color: var(--color-dark-accent, #D9B77E);
         }
 
         .academy-step-title {
@@ -921,14 +890,16 @@ export const Academy = () => {
           gap: 1.75rem;
           padding: 2.25rem;
           background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          border: 1px solid var(--color-dark-border);
         }
 
         .academy-closing-line {
           font-family: var(--font-serif);
-          font-size: 1.25rem;
+          font-size: clamp(1.15rem, 1.8vw, 1.45rem);
+          font-weight: 400;
+          line-height: 1.35;
           color: var(--color-dark-text);
-          margin-bottom: 0.35rem;
+          margin: 0;
         }
 
         .academy-details-strip {
@@ -937,7 +908,7 @@ export const Academy = () => {
           gap: 1.5rem 2.5rem;
           margin-bottom: 1.25rem;
           padding-bottom: 1.25rem;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          border-bottom: 1px solid var(--color-dark-border);
         }
 
         .academy-detail-item {
@@ -950,14 +921,14 @@ export const Academy = () => {
           font-size: var(--size-micro);
           letter-spacing: 0.08em;
           text-transform: uppercase;
-          color: var(--color-dark-accent, #C88358);
+          color: var(--color-dark-accent, #D9B77E);
           font-weight: 600;
         }
 
         .academy-detail-val {
           font-family: var(--font-body);
           font-size: 0.95rem;
-          color: #FAF8F5;
+          color: var(--color-dark-text);
         }
 
         /* MOBILE: same pinned scroll as desktop, perfectly balanced 100svh fit */
@@ -972,7 +943,7 @@ export const Academy = () => {
           .academy-pin-wrap {
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
             box-sizing: border-box;
             height: 100svh;
             min-height: 100svh;
@@ -1009,7 +980,7 @@ export const Academy = () => {
             margin-bottom: 0 !important;
           }
           .academy-hero-grid {
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.75rem;
           }
 
           .academy-stage-wrapper {

@@ -3,7 +3,7 @@
 ## 1. Creative Direction & Brand Concept
 - **Concept:** Contemporary Editorial Salon. Quiet confidence, warm intimacy, and magazine-grade typographic hierarchy. Tailored specifically for Hair City Salon & Academy on Necklace Road, Ranpise Nagar, Akola.
 - **Tone:** Grounded, artisan, warm, premium yet welcoming and honest. Avoids flashy tech gimmicks, artificial salon clichés ("Where beauty meets elegance"), or generic corporate card grids.
-- **Multilingual Foresight:** Rooted in Maharashtra context with bilingual harmony (English primary, with Marathi / Hindi typography support via Noto Sans Devanagari fallback and localized signifiers like "अकोला").
+- **Concept Focus:** Rooted in Akola, Maharashtra with focused English typography tailored for clean reading.
 
 ## 2. Color Palette & WCAG AA Contrast
 Defined as pure CSS Custom Properties:
@@ -18,7 +18,7 @@ Defined as pure CSS Custom Properties:
 
 ## 3. Typography Scale & Systems
 - **Display Serif:** `Newsreader` / `Playfair Display` (preloaded Google Fonts) — literary, bespoke, editorial authority.
-- **Body & Sans:** `Plus Jakarta Sans` with `Noto Sans Devanagari` fallback — exceptionally clean legibility at small sizes, modern metrics.
+- **Body & Sans:** `Plus Jakarta Sans` with system fallbacks — exceptionally clean legibility at small sizes, modern metrics.
 - **Fluid Type Scale (CSS `clamp()`):**
   - `--font-hero`: `clamp(2.75rem, 6.5vw + 1rem, 5.75rem)`
   - `--font-h2`: `clamp(2rem, 3.8vw + 0.8rem, 3.25rem)`

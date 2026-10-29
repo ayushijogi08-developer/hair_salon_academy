@@ -6,16 +6,148 @@
 
 ---
 
-## 1. Service Pricing (`siteData.pricing`)
+## Quick Preview Mode (Development Only)
+
+You can preview what every section looks like with sample data before adding real photos or content:
+
+- **Salon Home Page Preview**: Open `http://localhost:5173/?preview=1`  
+  *Previews: Team cards, Before & After comparison slider, and Client Reviews carousel.*
+- **Academy Page Preview**: Open `http://localhost:5173/academy?preview=1`  
+  *Previews: Academy Educators cards and Academy Photo Gallery with Lightbox.*
+
+> **Security & Production Safety**:  
+> Preview mode only works in local development (`import.meta.env.DEV`). It is stripped out of production builds and never touches confirmed data flags. Every sample item is prominently tagged with a red `SAMPLE` badge.
+
+---
+
+## 1. Academy Photos (`src/assets/images/academy/`)
+
+Drop verified academy images directly into the [`src/assets/images/academy/`](./src/assets/images/academy/) folder.
+
+### What happens automatically:
+- Every image placed in this folder is **auto-loaded** into the website gallery using Vite's `import.meta.glob`.
+- Alt text is **auto-generated** from the filename (e.g., `students-scissor-practice.jpg` becomes `"Students Scissor Practice"`).
+- The Academy Gallery section and its interactive Lightbox will automatically mount on `/academy` as soon as images are detected.
+
+### What photos to provide:
+- [ ] **Academy Hero Image**: Replace academy hero with a real photo of the Hair City academy (file: `src/assets/images/academy/hero.jpg`, portrait, at least 1200px wide).
+- [ ] Students and trainers at work during chair sessions
+- [ ] Classroom theory and head-block sectioning practice
+- [ ] Live salon haircuts and blowout demonstrations
+- [ ] Student graduation and certificate handover moments
+
+### Naming convention:
+Use lowercase words separated by hyphens:
+- `trainer-cutting-demo.jpg`
+- `students-colour-theory.jpg`
+- `live-client-haircut.jpg`
+- `batch-certificate-ceremony.jpg`
+
+### Photo specs:
+- **Format**: `.jpg`, `.jpeg`, `.png`, or `.webp`
+- **Orientation**: 4:5 or 3:4 portrait preferred; 16:9 landscape supported
+- **Resolution**: 1200px+ width, under 800KB for fast loading
+
+---
+
+## 2. Stylist & Educator Portraits (`src/assets/images/team/`)
+
+Drop individual headshot portraits directly into [`src/assets/images/team/`](./src/assets/images/team/).
+
+### Naming convention:
+Name each portrait using the stylist's or educator's first and last name in lowercase with a hyphen:
+- `rahul-sharma.jpg`
+- `priya-patil.jpg`
+- `mohit-deshmukh.jpg`
+
+### Photo specs:
+- **Format**: `.jpg`, `.jpeg`, `.png`, or `.webp`
+- **Orientation**: Vertical portrait (4:5 or 3:4 aspect ratio)
+- **Background**: Neutral studio or warm salon background with natural lighting
+- **Resolution**: 800x1000px, under 400KB
+- **Fallback**: If no portrait is provided, the card automatically displays an initials monogram avatar (e.g., `"RS"`).
+
+---
+
+## 3. Salon Team Members (`siteData.team` in `src/data/site.js`)
+
+Add confirmed salon stylists to `siteData.team`. When items are added with `confirmed: true`, the **Our Team** section automatically renders on the salon home page.
+
+### Required per stylist:
+- [ ] **Full Name**: Stylist's verified name
+- [ ] **Role / Title**: (e.g., `"Senior Stylist"`, `"Master Colourist"`, `"Creative Director"`)
+- [ ] **Experience**: Verified years of craft experience (e.g., `"8+ years"`, `"5+ years"`)
+- [ ] **Photo**: Filename matching an image in `src/assets/images/team/` (e.g., `"rahul-sharma.jpg"`) or `null` for initials avatar
+- [ ] **Bio**: 1–2 sentences on signature techniques or craft specialization
+- [ ] **Confirmation**: Set `confirmed: true`
+
+### Fill-in Template:
+```javascript
+// In src/data/site.js:
+team: [
+  {
+    id: "team-01",
+    name: "Rahul Sharma",
+    role: "Senior Stylist & Creative Director",
+    experience: "8+ years",
+    photo: "rahul-sharma.jpg", // in src/assets/images/team/
+    bio: "Specializing in precision scissor-over-comb cuts, textured fades, and bespoke client consultations.",
+    confirmed: true
+  },
+  {
+    id: "team-02",
+    name: "Priya Patil",
+    role: "Master Colourist",
+    experience: "6+ years",
+    photo: "priya-patil.jpg", // in src/assets/images/team/
+    bio: "Specializing in dimensional balayage, babylights, and custom tone neutralisation.",
+    confirmed: true
+  }
+]
+```
+
+---
+
+## 4. Academy Educators (`siteData.academyTeam` in `src/data/site.js`)
+
+Add confirmed trainers and faculty to `siteData.academyTeam`. When items are added with `confirmed: true`, the **Academy Educators** block automatically renders on the `/academy` page with duotone-to-colour hover transitions.
+
+### Required per educator:
+- [ ] **Full Name**: Educator's verified name
+- [ ] **Role / Title**: (e.g., `"Lead Academy Educator"`, `"Technical Colour Mentor"`)
+- [ ] **Experience**: Verified salon and teaching experience (e.g., `"10+ years salon & training"`)
+- [ ] **Photo**: Filename matching an image in `src/assets/images/team/` (e.g., `"rahul-sharma.jpg"`) or `null` for initials avatar
+- [ ] **Bio**: 1–2 sentences on masterclass topics and teaching methodology
+- [ ] **Confirmation**: Set `confirmed: true`
+
+### Fill-in Template:
+```javascript
+// In src/data/site.js:
+academyTeam: [
+  {
+    id: "acad-01",
+    name: "Rahul Sharma",
+    role: "Lead Academy Educator",
+    experience: "10+ years salon & teaching experience",
+    photo: "rahul-sharma.jpg", // in src/assets/images/team/
+    bio: "Conducts hands-on masterclasses in scissor ergonomics, sectioning geometry, and commercial salon floor readiness.",
+    confirmed: true
+  }
+]
+```
+
+---
+
+## 5. Service Pricing (`siteData.pricing` in `src/data/site.js`)
 
 Add verified service menu rates to `src/data/site.js`.
 
 ### Required per item:
-- [ ] **Category**: (e.g., `"Haircuts & Styling"`, `"Hair Colour"`, `"Treatments"`, `"Grooming"`)
-- [ ] **Service Name**: (e.g., `"Men's Classic Cut & Styling"`, `"Global Colour"`)
+- [ ] **Category**: (e.g., `"Haircuts & Styling"`, `"Hair Colour"`, `"Hair Treatments"`, `"Grooming"`)
+- [ ] **Service Name**: (e.g., `"Men's Precision Cut & Styling"`, `"Global Colour"`)
 - [ ] **From Price (₹)**: Starting rate in INR (e.g., `350`, `2500`)
-- [ ] **One-line Description**: Brief note on what the service includes (e.g., `"Consultation, hair wash, precision cut, and finish."`)
-- [ ] **Confirmation**: Set `confirmed: true` once verified with salon management.
+- [ ] **Description**: Brief note on what the service includes
+- [ ] **Confirmation**: Set `confirmed: true`
 
 ### Fill-in Template:
 ```javascript
@@ -49,45 +181,16 @@ pricing: [
 
 ---
 
-## 2. Stylist & Educator Team (`siteData.team`)
-
-Introduce the verified resident stylists and academy educators.
-
-### Required per member:
-- [ ] **Full Name**: Stylist / educator name
-- [ ] **Role / Title**: (e.g., `"Senior Stylist & Creative Director"`, `"Colour Specialist"`, `"Academy Educator"`)
-- [ ] **Years of Experience**: Verified salon experience (e.g., `"8+ years"`, `"5+ years"`)
-- [ ] **Photo**: High-resolution portrait image file (placed in `public/assets/team/` or `src/assets/`)
-- [ ] **Specialty / Bio**: 1–2 sentences on signature techniques or craft focus
-- [ ] **Confirmation**: Set `confirmed: true`.
-
-### Fill-in Template:
-```javascript
-team: [
-  {
-    id: "t-01",
-    name: "Stylist Name",
-    role: "Senior Stylist & Salon Director",
-    experience: "8+ years",
-    photo: "/assets/team/stylist-01.jpg",
-    bio: "Specializing in precision scissor work, fade geometry, and custom textured cuts.",
-    confirmed: true
-  }
-]
-```
-
----
-
-## 3. Real Client Reviews (`siteData.reviews`)
+## 6. Real Client Reviews (`siteData.reviews` in `src/data/site.js`)
 
 Display genuine reviews from clients who have visited the salon chairs.
 
-### Required per review (4 to 6 real reviews recommended):
+### Required per review:
 - [ ] **Review Text**: Exact, unedited quote from client
 - [ ] **Author Name**: Client's verified name or Google reviewer display name
 - [ ] **Source**: (e.g., `"Google Review"`)
 - [ ] **Source URL**: Direct link to the review or salon Google Business Profile
-- [ ] **Confirmation**: Set `confirmed: true`.
+- [ ] **Confirmation**: Set `confirmed: true`
 
 ### Fill-in Template:
 ```javascript
@@ -105,105 +208,43 @@ reviews: [
 
 ---
 
-## 4. Frequently Asked Questions (`siteData.faq`)
+## 7. Frequently Asked Questions (`siteData.faq` in `src/data/site.js`)
 
-Provide helpful, accurate guidance on frequent client queries.
+The 3 FAQ items below have neutral placeholder answers and are set to `confirmed: false` until salon management confirms the exact operational details.
 
-### Questions requiring verified answers:
-- [ ] **Appointments vs Walk-ins**: Do clients need prior bookings, or are walk-ins welcomed?
-- [ ] **Hair Colour Timing**: How long do global colour, balayage, or highlights typically take?
-- [ ] **Treatment Aftercare**: What routine and shampoo/conditioner are advised after smoothening or nanoplasty?
-- [ ] **Academy Admissions & Fees**: How often do new batches start, and how can students apply?
-- [ ] **Confirmation**: Set `confirmed: true`.
-
-### Fill-in Template:
-```javascript
-faq: [
-  {
-    id: "faq-01",
-    question: "Do I need to book an appointment before visiting?",
-    answer: "Walk-ins are warmly welcomed throughout our working hours (9:00 AM – 10:00 PM). However, for elaborate services like hair colour, smoothening, or peak evening hours, booking via WhatsApp ensures dedicated chair time.",
-    confirmed: true
-  },
-  {
-    id: "faq-02",
-    question: "How long does a hair colour or balayage service take?",
-    answer: "Standard root touch-ups take approximately 60–90 minutes. Complex lightening, highlights, and custom balayage work typically require 3 to 4.5 hours depending on initial hair thickness, base tone, and desired lift.",
-    confirmed: true
-  },
-  {
-    id: "faq-03",
-    question: "What aftercare is required after smoothening or nanoplasty?",
-    answer: "We recommend using sulfate-free cleansing care, avoiding tight hair ties for the first 48 hours, and scheduling a periodic restorative spa treatment to preserve shine and tensile strength.",
-    confirmed: true
-  },
-  {
-    id: "faq-04",
-    question: "How are academy admissions structured and when do new batches start?",
-    answer: "Academy batches run in small cohorts of 4 to 6 students to ensure one-on-one chair instruction. New cohorts start on the first Monday of each month. Contact our coordinator via WhatsApp for syllabus breakdowns and enrollment.",
-    confirmed: true
-  }
-]
-```
+### Items requiring owner verification:
+- [ ] **`faq-02` Hair Colour Duration**: Typical duration for global colour vs. balayage/highlights
+- [ ] **`faq-03` Treatment Aftercare**: Official aftercare advice and washing window
+- [ ] **`faq-04` Academy Batch Schedule**: Batch timings, cohort sizes, and admission dates
 
 ---
 
-## 5. Before & After Transformations (`siteData.beforeAfter`)
+## 8. Before & After Transformations (`siteData.beforeAfter`)
 
 Showcase genuine client transformations with comparison slider capability.
 
 ### Required per transformation:
-- [ ] **Title**: Short description of the transformation (e.g., `"Caramel Balayage Transformation"`, `"Nanoplasty Hair Restoration"`)
+- [ ] **Title**: Short description of the transformation (e.g., `"Caramel Balayage Transformation"`)
 - [ ] **Category**: (e.g., `"Colour"`, `"Restoration"`, `"Styling"`)
-- [ ] **Before Photo**: High-resolution image of hair before treatment (must have client consent)
-- [ ] **After Photo**: High-resolution image of final finished look under balanced salon lighting
-- [ ] **Client Consent**: Written/verbal permission to feature their transformation on the website
-- [ ] **Confirmation**: Set `confirmed: true`.
-
-### Fill-in Template:
-```javascript
-beforeAfter: [
-  {
-    id: "ba-01",
-    title: "Caramel Balayage & Blowout",
-    category: "Colour",
-    beforeSrc: "/assets/transformations/ba-01-before.jpg",
-    afterSrc: "/assets/transformations/ba-01-after.jpg",
-    confirmed: true
-  }
-]
-```
+- [ ] **Before Photo**: High-resolution image of hair before treatment
+- [ ] **After Photo**: High-resolution image of final finished look
+- [ ] **Client Consent**: Permission to feature transformation on website
+- [ ] **Confirmation**: Set `confirmed: true`
 
 ---
 
-## 6. Academy Details Strip (`siteData.academyDetails`)
+## 9. Academy Course Brochure PDF (`siteData.academy.brochureUrl`)
 
-Render key practical facts about the academy curriculum right above the academy CTA.
-
-### Required details:
-- [ ] **Duration**: (e.g., `"3 Months (Full-Time)"` or `"6 Weeks Intensive"`)
-- [ ] **Fee Range**: (e.g., `"Shared on direct consultation"` or confirmed tuition fee)
-- [ ] **Next Batch**: (e.g., `"1st of every month"` or upcoming enrollment date)
-- [ ] **Certificate**: (e.g., `"Hair City Professional Academy Certification"`)
-- [ ] **Confirmation**: Set `confirmed: true`.
-
-### Fill-in Template:
-```javascript
-academyDetails: {
-  duration: "3 Months (Full-Time)",
-  feeRange: "Shared on consultation",
-  nextBatch: "1st of every month",
-  certificate: "Professional Salon Certification",
-  confirmed: true
-}
-```
+- [ ] Place the brochure PDF in `public/assets/academy-brochure.pdf`.
+- [ ] In `src/data/site.js`, set `brochureUrl: "/assets/academy-brochure.pdf"`.
+- [ ] The "Download brochure (PDF)" button will automatically become visible.
 
 ---
 
-## How to Apply Changes
+## Step-by-Step Instructions for Applying Content
 
-1. Open [`src/data/site.js`](./src/data/site.js).
-2. Paste the confirmed data objects into the respective arrays/keys.
-3. Ensure each item has `confirmed: true`.
-4. Run `npm run build` to verify the bundle.
-5. Deploy or reload the site. The sections will automatically mount and render with full animations, accessibility attributes, and responsive layouts.
+1. Drop academy photos into `src/assets/images/academy/`.
+2. Drop stylist & educator portraits into `src/assets/images/team/`.
+3. Open [`src/data/site.js`](./src/data/site.js) and fill in the details with `"confirmed": true`.
+4. Run `npm run lint` and `npm run build` to verify correctness.
+5. Deploy or reload. The sections mount with full animations, duotone hovers, accessibility, and responsive layouts.

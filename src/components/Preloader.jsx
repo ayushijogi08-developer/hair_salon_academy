@@ -101,8 +101,8 @@ export const Preloader = ({ onComplete }) => {
           position: fixed;
           inset: 0;
           z-index: 99999;
-          background-color: #141211;
-          color: #FAF8F5;
+          background-color: var(--color-dark-bg);
+          color: var(--color-dark-text);
           display: flex;
           align-items: center;
           justify-content: center;

@@ -2,6 +2,7 @@ import React, { useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { siteData, whatsappFor } from '../data/site';
 import { SectionEyebrowRow } from '../components/MotionText';
+import { track } from '../lib/track';
 
 export const ColourSection = () => {
   const data = siteData.colour;
@@ -153,6 +154,7 @@ export const ColourSection = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-secondary"
+                onClick={() => track.whatsappClick('colour_section')}
               >
                 <span>Ask about colour</span>
                 <span className="btn-arrow">→</span>

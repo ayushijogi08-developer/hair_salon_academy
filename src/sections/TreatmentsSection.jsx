@@ -2,6 +2,7 @@ import React, { useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { siteData, whatsappFor } from '../data/site';
 import { WordFillParagraph, SectionEyebrowRow } from '../components/MotionText';
+import { track } from '../lib/track';
 
 export const TreatmentsSection = () => {
   const data = siteData.treatments;
@@ -134,6 +135,7 @@ export const TreatmentsSection = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-secondary"
+                onClick={() => track.whatsappClick('treatments_section')}
               >
                 <span>Consult on treatments</span>
                 <span className="btn-arrow">→</span>

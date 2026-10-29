@@ -9,6 +9,9 @@
  */
 
 const imageModules = import.meta.glob('../assets/images/*.{jpg,jpeg,png,webp}', { eager: true });
+const academyImageModules = import.meta.glob('../assets/images/academy/*.{jpg,jpeg,png,webp}', { eager: true });
+const teamImageModules = import.meta.glob('../assets/images/team/*.{jpg,jpeg,png,webp}', { eager: true });
+const transformationImageModules = import.meta.glob('../assets/images/transformations/*.{jpg,jpeg,png,webp}', { eager: true });
 
 function resolveImage(name, fallbackName = null) {
   const findMatch = (target) => {
@@ -28,9 +31,66 @@ function resolveImage(name, fallbackName = null) {
   return null;
 }
 
+/**
+ * Resolve portrait files placed in src/assets/images/team/
+ * Accepts a filename (e.g. "firstname-lastname.jpg" or "firstname-lastname")
+ */
+export function resolveTeamPhoto(name) {
+  if (!name) return null;
+  // If already a resolved URL or import module
+  if (typeof name === 'string' && (name.startsWith('http') || name.startsWith('data:') || name.startsWith('/'))) {
+    return name;
+  }
+  const match = Object.keys(teamImageModules).find((k) => {
+    const filename = k.split('/').pop();
+    return filename === name || filename.startsWith(name + '.') || k.endsWith(name);
+  });
+  return match ? teamImageModules[match].default : null;
+}
+
+/**
+ * Resolve client transformation photos placed in src/assets/images/transformations/
+ * Accepts a filename (e.g. "ba-01-before.jpg", "ba-01-after.jpg")
+ */
+export function resolveTransformationImage(name) {
+  if (!name) return null;
+  if (typeof name === 'string' && (name.startsWith('http') || name.startsWith('data:') || name.startsWith('/'))) {
+    return name;
+  }
+  const match = Object.keys(transformationImageModules).find((k) => {
+    const filename = k.split('/').pop();
+    return filename === name || filename.startsWith(name + '.') || k.endsWith(name);
+  });
+  return match ? transformationImageModules[match].default : null;
+}
+
+/**
+ * Auto-load every image in src/assets/images/academy/
+ * Generates clean alt text from the filename (e.g. "students-at-work.jpg" -> "Students At Work").
+ */
+function loadAcademyGallery() {
+  return Object.entries(academyImageModules).map(([path, mod]) => {
+    const filename = path.split('/').pop() || '';
+    const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
+    const words = nameWithoutExt.split(/[-_]+/).filter(Boolean);
+    const alt =
+      words
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' ') || 'Hair City Academy Training';
+    return {
+      id: `acad-${nameWithoutExt}`,
+      src: mod.default || mod,
+      alt,
+      confirmed: true
+    };
+  });
+}
+
 export function whatsappFor(topic) {
-  const text = encodeURIComponent(`Hello Hair City, I'd like to book ${topic}.`);
-  return `https://wa.me/917057174147?text=${text}`;
+  const message = topic
+    ? `Hello Hair City, I have a question about ${topic}.`
+    : `Hello Hair City, I have a question about your services.`;
+  return `https://wa.me/917057174147?text=${encodeURIComponent(message)}`;
 }
 
 export const siteData = {
@@ -54,6 +114,11 @@ export const siteData = {
     time: "9:00 AM – 10:00 PM",
     closedDates: [] // e.g. ["2026-11-09"] (YYYY-MM-DD, India time)
   },
+  walkIn: {
+    headline: "No appointment needed.",
+    text: "Walk in any day, 9:00 AM to 10:00 PM.",
+    confirmed: true
+  },
   coordinates: {
     lat: 20.7122645,
     lng: 77.0095123
@@ -62,7 +127,7 @@ export const siteData = {
     instagram: "https://www.instagram.com/_hair_city_salon/",
     googleMaps: "https://maps.google.com/?cid=9185693562963339062",
     directions: "https://www.google.com/maps/dir/?api=1&destination=20.7122645,77.0095123",
-    whatsappGeneral: "https://wa.me/917057174147?text=Hello%20Hair%20City%2C%20I'd%20like%20to%20ask%20about%20an%20appointment.",
+    whatsappGeneral: "https://wa.me/917057174147?text=Hello%20Hair%20City%2C%20I%20have%20a%20question%20about%20your%20services.",
     whatsappAcademy: "https://wa.me/917057174147?text=Hello%20Hair%20City%2C%20I'd%20like%20to%20know%20about%20your%20academy%20courses."
   },
 
@@ -73,7 +138,7 @@ export const siteData = {
     headlineLine2: "and learns how.",
     headlineEmphasised: "learns",
     sub: "Cuts, colour and treatments in the salon. Professional hair training in the academy.",
-    ctaPrimary: "Book a consultation",
+    ctaPrimary: "Walk in today",
     ctaSecondary: "Explore the academy",
     proof: null, // Populated ONLY when confirmed owner-supplied Google review metrics exist: { rating: 4.9, count: 120, confirmed: true }
     confirmed: false
@@ -205,6 +270,34 @@ export const siteData = {
       { step: "2", title: "Talk to the academy team" },
       { step: "3", title: "Choose your batch" }
     ],
+    studentJourney: [
+      {
+        step: "01",
+        title: "Enquire",
+        description: "Message our academy coordinator on WhatsApp to express interest and ask preliminary questions."
+      },
+      {
+        step: "02",
+        title: "Demo & Consultation",
+        description: "Visit our Ranpise Nagar studio, observe active styling on the salon floor, and discuss your learning goals."
+      },
+      {
+        step: "03",
+        title: "Choose Batch",
+        description: "Select an upcoming cohort timing and training schedule that matches your availability."
+      },
+      {
+        step: "04",
+        title: "Training in Working Salon",
+        description: "Master fundamentals, scissor ergonomics, sectioning geometry, and colour chemistry in a live salon environment."
+      },
+      {
+        step: "05",
+        title: "Practice on Real Clients",
+        description: "Perform guided haircuts, styling, and treatments on studio clients under direct educator supervision."
+      }
+    ],
+    brochureUrl: null, // Set to PDF URL (e.g. "/assets/academy-brochure.pdf") when confirmed
     closingLine: "Course duration, batch timings and fees are shared on enquiry.",
     cta: "Enquire about the academy",
     confirmed: false
@@ -327,26 +420,43 @@ export const siteData = {
   // --- OPTIONAL BUSINESS ARRAYS (rendered ONLY when confirmed: true items exist) ---
   // STRICT RULE: Never invent prices, reviews, team names, ratings, certificates, offers.
   pricing: [
-    /* Example format:
+    // EXAMPLE ONLY — unconfirmed placeholder items showing format for owner verification.
+    // Notice: confirmed is strictly false. No prices are invented (priceFrom is null).
     {
-      id: "p1",
-      category: "Haircuts",
+      id: "pricing-example-01",
+      category: "Haircuts & Styling",
       name: "Men's Precision Cut & Styling",
-      priceFrom: 300, // Number or null; renders "from ₹300" if provided
-      description: "Consultation, wash, cut and finish.",
+      description: "Consultation, precision scissor-over-comb cut, rinse, and finish.",
+      priceFrom: null, // Set to number (e.g. 350) once confirmed by owner; do not invent prices
+      confirmed: false
+    },
+    {
+      id: "pricing-example-02",
+      category: "Haircuts & Styling",
+      name: "Women's Layered Cut & Blowout",
+      description: "Consultation, custom layering, rinse, and blowout styling.",
+      priceFrom: null, // Set to number once confirmed by owner; do not invent prices
+      confirmed: false
+    },
+    {
+      id: "pricing-example-03",
+      category: "Hair Treatments",
+      name: "Restorative Hair Spa",
+      description: "Deep steam infusion, nourishing mask, and scalp stimulation.",
+      priceFrom: null, // Set to number once confirmed by owner; do not invent prices
       confirmed: false
     }
-    */
   ],
 
   team: [
-    /* Example format:
+    /* Example format (strictly leave empty until confirmed by owner):
     {
-      id: "t1",
+      id: "team-01",
       name: "Stylist Name",
       role: "Senior Stylist",
       experience: "5+ years",
-      bio: "Specializing in precision cutting and creative colour.",
+      bio: "Specializing in precision scissor cuts, fade geometry, and tailored styling.",
+      photo: "firstname-lastname.jpg", // Photo filename placed in src/assets/images/team/
       confirmed: false
     }
     */
@@ -369,7 +479,7 @@ export const siteData = {
     {
       id: "faq-01",
       question: "Do I need to book an appointment before visiting?",
-      answer: "Walk-ins are warmly welcomed throughout our working hours (9:00 AM – 10:00 PM). However, for elaborate services like hair colour, smoothening, or peak evening hours, booking via WhatsApp ensures dedicated chair time.",
+      answer: "No appointment is needed. Walk-ins are welcome every day from 9:00 AM to 10:00 PM. If you have a question first, you can call or message us on WhatsApp.",
       confirmed: true
     },
     {
@@ -381,28 +491,46 @@ export const siteData = {
     {
       id: "faq-02",
       question: "How long does a hair colour or balayage service take?",
-      answer: "Standard root touch-ups take approximately 60–90 minutes. Complex lightening, highlights, and custom balayage work typically require 3 to 4.5 hours depending on initial hair thickness, base tone, and desired lift.",
-      confirmed: true
+      answer: "Service duration depends on your hair length, base colour, and chosen technique. Please message us on WhatsApp and our team will guide you.",
+      confirmed: false
     },
     {
       id: "faq-03",
       question: "What aftercare is required after smoothening or nanoplasty?",
-      answer: "We recommend using sulfate-free cleansing care, avoiding tight hair ties for the first 48 hours, and scheduling a periodic restorative spa treatment to preserve shine and tensile strength.",
-      confirmed: true
+      answer: "Aftercare depends on the specific treatment and hair condition. Please message us on WhatsApp and our stylists will guide you.",
+      confirmed: false
     },
     {
       id: "faq-04",
       question: "How are academy admissions structured and when do new batches start?",
-      answer: "Academy batches run in small cohorts of 4 to 6 students to ensure one-on-one chair instruction. New cohorts start on the first Monday of each month. Contact our coordinator via WhatsApp for syllabus breakdowns and enrollment.",
-      confirmed: true
+      answer: "Batch schedules, admissions, and course details are shared directly on enquiry. Please message us on WhatsApp and our academy coordinator will guide you.",
+      confirmed: false
     }
   ],
+
+  academyTeam: [
+    /* Example format (strictly leave empty until confirmed by owner):
+    {
+      id: "acad-01",
+      name: "Educator Name",
+      role: "Lead Educator & Master Stylist",
+      experience: "8+ years",
+      bio: "Conducts hands-on masterclasses in precision haircutting, sectioning geometry, and advanced colour techniques.",
+      photo: "firstname-lastname.jpg", // Photo filename placed in src/assets/images/team/
+      confirmed: false
+    }
+    */
+  ],
+
+  // Auto-loaded from src/assets/images/academy/ (empty array if folder has no images yet)
+  academyGallery: loadAcademyGallery(),
 
   academyDetails: {
     duration: "3 Months",
     feeRange: "Shared on enquiry",
     nextBatch: "1st of every month",
     certificate: "Certificate on completion",
+    emiNote: "Flexible fee installment / EMI options available upon enquiry.",
     confirmed: false
   },
   /* Example format when confirmed:
@@ -416,15 +544,23 @@ export const siteData = {
   */
 
   beforeAfter: [
-    /* Example format:
     {
-      id: "ba-1",
-      title: "Caramel Balayage Transformation",
-      beforeSrc: "/assets/images/before.jpg",
-      afterSrc: "/assets/images/after.jpg",
-      category: "Colour",
-      confirmed: false
+      id: "ba-01",
+      title: "Caramel Balayage & Layered Cut",
+      category: "Colour & Styling",
+      caption: "Soft dimensional balayage with face-framing layers and healthy shine finish.",
+      beforeSrc: "ba-01-before.jpg",
+      afterSrc: "ba-01-after.jpg",
+      confirmed: true
+    },
+    {
+      id: "ba-02",
+      title: "Textured Crop & Low Fade",
+      category: "Men's Cut",
+      caption: "Clean temple taper with textured crown volume and sharp hairline perimeter.",
+      beforeSrc: "ba-02-before.jpg",
+      afterSrc: "ba-02-after.jpg",
+      confirmed: true
     }
-    */
   ]
 };
